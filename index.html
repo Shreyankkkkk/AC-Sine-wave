@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AC Generator – Complete Physics Simulation</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #f5f2ed;
+    --surface:  #ffffff;
+    --border:   #ddd8d0;
+    --border2:  #c8c2b8;
+    --accent:   #2a5fa5;
+    --accent2:  #1a3f72;
+    --red:      #c0392b;
+    --green:    #1a7a4a;
+    --amber:    #b8860b;
+    --text:     #1e1c19;
+    --muted:    #7a7368;
+    --light:    #f0ece5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 17px; }
+  body { font-family: 'Lora', Georgia, serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; line-height: 1.7; }
+  header { text-align: center; padding: 40px 24px 28px; border-bottom: 2px solid var(--border2); background: var(--surface); }
+  header h1 { font-family: 'Lora', serif; font-weight: 700; font-size: clamp(1.6rem, 3vw, 2.6rem); color: var(--text); letter-spacing: -0.01em; }
+  header p { color: var(--muted); font-size: 1rem; margin-top: 8px; font-style: italic; }
+  nav { display: flex; justify-content: center; gap: 0; background: var(--surface); border-bottom: 2px solid var(--border2); flex-wrap: wrap; }
+  .tab-btn { font-family: 'DM Mono', monospace; font-size: 0.82rem; font-weight: 500; padding: 14px 24px; border: none; border-right: 1px solid var(--border); border-bottom: 3px solid transparent; background: transparent; color: var(--muted); cursor: pointer; transition: all .2s; letter-spacing: 0.01em; }
+  .tab-btn:first-child { border-left: 1px solid var(--border); }
+  .tab-btn:hover { color: var(--accent); background: var(--light); }
+  .tab-btn.active { color: var(--accent); background: var(--bg); border-bottom: 3px solid var(--accent); font-weight: 500; }
+  .section { display: none; padding: 36px 32px; max-width: 1500px; margin: 0 auto; }
+  .section.active { display: block; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 28px 32px; margin-bottom: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .card-title { font-family: 'DM Mono', monospace; font-size: 0.8rem; font-weight: 500; letter-spacing: 0.08em; color: var(--accent); text-transform: uppercase; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .three-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  @media (max-width: 960px) { .two-col, .three-col { grid-template-columns: 1fr; } }
+  canvas { display: block; border-radius: 4px; background: #f8f6f2; border: 1px solid var(--border2); }
+  canvas.full { width: 100%; }
+  .ctrl-row { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+  .ctrl-row label { font-family: 'DM Mono', monospace; font-size: 0.82rem; color: var(--muted); white-space: nowrap; min-width: 140px; }
+  .ctrl-row .val { font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--accent); font-weight: 500; min-width: 72px; text-align: right; }
+  input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+  .btn { font-family: 'DM Mono', monospace; font-size: 0.82rem; font-weight: 500; padding: 10px 24px; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; border-radius: 4px; transition: all .18s; letter-spacing: 0.02em; }
+  .btn:hover { background: var(--accent); color: #fff; }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.danger:hover { background: var(--red); color: #fff; }
+  .formula { background: var(--light); border: 1px solid var(--border); border-left: 4px solid var(--amber); border-radius: 4px; padding: 14px 18px; margin: 12px 0; font-family: 'DM Mono', monospace; font-size: 1.05rem; color: var(--text); }
+  .formula.green  { border-left-color: var(--green);  }
+  .formula.red    { border-left-color: var(--red);    }
+  .formula.cyan   { border-left-color: var(--accent); background: #eef3fb; }
+  .formula.purple { border-left-color: #7b5ea7; }
+  .step-num { display: inline-block; background: var(--accent); color: #fff; font-family: 'DM Mono', monospace; font-weight: 500; font-size: 0.75rem; padding: 2px 9px; border-radius: 3px; margin-right: 10px; }
+  .step-title { font-size: 1.1rem; color: var(--accent2); margin: 22px 0 10px; font-weight: 600; }
+  p { line-height: 1.75; font-size: 1rem; color: var(--text); margin-bottom: 12px; }
+  .hl-gold  { color: var(--amber);  font-weight: 600; }
+  .hl-green { color: var(--green);  font-weight: 600; }
+  .hl-red   { color: var(--red);    font-weight: 600; }
+  .hl-cyan  { color: var(--accent); font-weight: 600; }
+  ul { padding-left: 24px; margin-bottom: 14px; }
+  li { line-height: 1.85; font-size: 1rem; color: var(--text); }
+  .readout-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; margin-top: 16px; }
+  .readout-box { background: var(--light); border: 1px solid var(--border); border-radius: 5px; padding: 14px 12px; text-align: center; }
+  .readout-box .r-label { font-family: 'DM Mono', monospace; font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 7px; }
+  .readout-box .r-val { font-family: 'DM Mono', monospace; font-size: 1.4rem; font-weight: 500; color: var(--text); }
+  .r-val.cyan  { color: var(--accent); }
+  .r-val.gold  { color: var(--amber);  }
+  .r-val.green { color: var(--green);  }
+  .r-val.red   { color: var(--red);    }
+  #phasorCanvas { border-radius: 50%; background: #f8f6f2; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+  th { background: var(--light); color: var(--accent2); padding: 12px 16px; text-align: left; font-family: 'DM Mono', monospace; font-size: 0.75rem; letter-spacing: 0.07em; text-transform: uppercase; border-bottom: 2px solid var(--border2); }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--border); font-size: 0.95rem; }
+  tr:hover td { background: var(--light); }
+  td:first-child { font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--accent2); font-weight: 500; }
+  .num-input { width: 72px; background: var(--light); border: 1px solid var(--border2); color: var(--accent2); font-family: 'DM Mono', monospace; font-size: 0.9rem; font-weight: 500; padding: 5px 8px; border-radius: 4px; text-align: center; transition: border-color .2s; }
+  .num-input:focus { outline: none; border-color: var(--accent); }
+  .unit-tag { font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--muted); min-width: 28px; }
+  footer { text-align: center; padding: 24px; color: var(--muted); font-size: 0.9rem; font-style: italic; border-top: 1px solid var(--border2); margin-top: 40px; background: var(--surface); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>⚡ AC GENERATOR — COMPLETE PHYSICS SIMULATION</h1>
+  <p>Electromagnetic Induction · Faraday's Law · Sinusoidal Waveforms · RMS · Phasor Analysis</p>
+</header>
+
+<nav>
+  <button class="tab-btn active" onclick="showTab('gen')">① AC Generator</button>
+  <button class="tab-btn" onclick="showTab('deriv')">② Derivation</button>
+  <button class="tab-btn" onclick="showTab('wave')">③ Wave Simulator</button>
+  <button class="tab-btn" onclick="showTab('formulas')">④ All Formulas</button>
+  <button class="tab-btn" onclick="showTab('compare')">⑤ AC vs DC</button>
+</nav>
+
+<!-- SECTION 1 – AC GENERATOR -->
+<section id="tab-gen" class="section active">
+  <div class="two-col">
+    <!-- Generator Canvas -->
+    <div class="card">
+      <div class="card-title">🔄 AC Generator — Side View (Rotating Coil in Magnetic Field)</div>
+      <canvas id="genCanvas" width="620" height="500" class="full"></canvas>
+
+      <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap; align-items:center;">
+        <button class="btn" id="genPlayBtn" onclick="toggleGen()">⏸ PAUSE</button>
+        <button class="btn danger" onclick="resetGen()">↺ RESET</button>
+      </div>
+      <div class="ctrl-row" style="margin-top:12px;">
+        <label>Rotation Speed</label>
+        <input type="range" id="genSpeed" min="0.05" max="3" step="0.05" value="0.6" oninput="updateGenSpeed()">
+        <span class="val" id="genSpeedVal">0.6×</span>
+      </div>
+
+      <!-- ── THREE VISIBILITY TOGGLES ── -->
+      <div style="margin-top:14px; padding:16px; background:var(--light); border:1px solid var(--border); border-radius:6px; display:flex; flex-direction:column; gap:10px;">
+        <div style="font-family:'DM Mono',monospace; font-size:0.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.09em;">Display Options</div>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem; color:var(--text);">
+          <input type="checkbox" id="cb-motion" checked onchange="updateGenToggles()" style="width:16px;height:16px;accent-color:var(--accent);">
+          Direction of movement <span style="color:var(--muted);font-size:0.82rem;">(black arrows on coil)</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem; color:#2a5fa5; font-weight:600;">
+          <input type="checkbox" id="cb-field" checked onchange="updateGenToggles()" style="width:16px;height:16px;accent-color:var(--accent);">
+          Magnetic field <span style="color:var(--muted);font-size:0.82rem;font-weight:400;">(blue arrows B)</span>
+        </label>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-size:0.95rem; color:#c0392b; font-weight:600;">
+          <input type="checkbox" id="cb-current" checked onchange="updateGenToggles()" style="width:16px;height:16px;accent-color:var(--accent);">
+          Induced current <span style="color:var(--muted);font-size:0.82rem;font-weight:400;">(red wire colour + arrows)</span>
+        </label>
+      </div>
+
+      <!-- ── KEY POINT CARDS ── -->
+      <div style="margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+        <div style="background:var(--light); border:1px solid var(--border); border-left:3px solid #c0392b; padding:9px 13px; border-radius:4px; font-size:0.85rem;">
+          <span style="color:#c0392b; font-weight:600;">N POLE</span><br><span style="color:var(--muted);">Creates magnetic field (top)</span>
+        </div>
+        <div style="background:var(--light); border:1px solid var(--border); border-left:3px solid #1a7a4a; padding:9px 13px; border-radius:4px; font-size:0.85rem;">
+          <span style="color:#1a7a4a; font-weight:600;">S POLE</span><br><span style="color:var(--muted);">Receives field lines (bottom)</span>
+        </div>
+        <div style="background:var(--light); border:1px solid var(--border); border-left:3px solid #2a5fa5; padding:9px 13px; border-radius:4px; font-size:0.85rem;">
+          <span style="color:#2a5fa5; font-weight:600;">FIELD LINES B</span><br><span style="color:var(--muted);">Vertical, N → S direction</span>
+        </div>
+        <div style="background:var(--light); border:1px solid var(--border); border-left:3px solid #b8860b; padding:9px 13px; border-radius:4px; font-size:0.85rem;">
+          <span style="color:#b8860b; font-weight:600;">COIL (ARMATURE)</span><br><span style="color:var(--muted);">Rotates around central axis</span>
+        </div>
+        <div style="background:var(--light); border:1px solid var(--border); border-left:3px solid #7b5ea7; padding:9px 13px; border-radius:4px; font-size:0.85rem;">
+          <span style="color:#7b5ea7; font-weight:600;">SLIP RINGS</span><br><span style="color:var(--muted);">Transfer AC to external circuit</span>
+        </div>
+        <div style="background:var(--light); border:1px solid var(--border); border-left:3px solid #1a7a4a; padding:9px 13px; border-radius:4px; font-size:0.85rem;">
+          <span style="color:#1a7a4a; font-weight:600;">BRUSHES + LOAD R</span><br><span style="color:var(--muted);">Output terminals, external load</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right panel -->
+    <div>
+      <div class="card">
+        <div class="card-title">📈 Real-Time EMF Output — e(t) = Vm·sin(ωt)</div>
+        <div class="ctrl-row" style="margin-bottom:10px;">
+          <label>Graph Speed</label>
+          <input type="range" id="graphSpeed" min="0.05" max="3" step="0.05" value="0.5" oninput="updateGraphSpeed()">
+          <span class="val" id="graphSpeedVal">0.5×</span>
+        </div>
+        <canvas id="outputCanvas" width="460" height="210" class="full"></canvas>
+        <div style="display:flex; gap:18px; margin-top:8px; font-size:0.85rem; color:var(--muted); flex-wrap:wrap;">
+          <span><span style="color:#1a7a4a;">●</span> Positive half-cycle</span>
+          <span><span style="color:#c0392b;">●</span> Negative half-cycle</span>
+          <span><span style="color:#b8860b;">●</span> Current position</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📡 Live Readouts</div>
+        <div class="readout-grid">
+          <div class="readout-box"><div class="r-label">Coil Angle θ</div><div class="r-val gold" id="rd-angle">0°</div></div>
+          <div class="readout-box"><div class="r-label">Flux Φ (norm.)</div><div class="r-val cyan" id="rd-flux">1.00</div></div>
+          <div class="readout-box"><div class="r-label">EMF e (norm.)</div><div class="r-val green" id="rd-emf">0.00</div></div>
+          <div class="readout-box"><div class="r-label">Flux-cut rate</div><div class="r-val red" id="rd-phase">ZERO</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💡 Why Does the Coil Produce a Sine Wave?</div>
+        <p>The <span class="hl-gold">coil rotates</span> at constant speed ω between the <span class="hl-red">N</span> and <span class="hl-green">S</span> poles. The key is <b>how fast the coil cuts through field lines</b>:</p>
+        <ul style="margin:10px 0;">
+          <li><span class="hl-gold">θ = 0°</span> — Coil faces field head-on → <b>zero cutting</b> → EMF = 0</li>
+          <li><span class="hl-cyan">θ = 90°</span> — Coil edge slices through field → <b>max cutting</b> → EMF = peak</li>
+          <li><span class="hl-gold">θ = 180°</span> — Faces field again → <b>zero cutting</b> → EMF = 0</li>
+          <li><span class="hl-red">θ = 270°</span> — Max cutting, <b>opposite direction</b> → EMF = −peak</li>
+        </ul>
+        <div class="formula">e(t) = Vm · sin(ωt) &nbsp;← this is why it's a sine!</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 2 – DERIVATION -->
+<section id="tab-deriv" class="section">
+  <div class="two-col">
+    <div>
+      <div class="card">
+        <div class="card-title">📐 Step-by-Step Mathematical Derivation</div>
+        <div class="step-title"><span class="step-num">1</span>Magnetic Flux Through the Coil</div>
+        <p>A coil of <span class="hl-gold">N turns</span>, area <span class="hl-gold">A</span> rotates in a uniform field <span class="hl-gold">B</span>. At angle θ = ωt from the field direction:</p>
+        <div class="formula">Φ = N · B · A · cos(ωt)</div>
+        <p>When the coil is <span class="hl-cyan">perpendicular to B</span>, Φ is maximum. When <span class="hl-red">parallel</span>, Φ = 0.</p>
+        <div class="step-title"><span class="step-num">2</span>Faraday's Law of Electromagnetic Induction</div>
+        <p>The induced EMF is the negative rate of change of flux over time:</p>
+        <div class="formula red">e = −dΦ/dt</div>
+        <p>Differentiating the flux equation:</p>
+        <div class="formula">d/dt [NBA · cos(ωt)] = −NBAω · sin(ωt)</div>
+        <p>With the negative sign from Faraday's law cancelling:</p>
+        <div class="formula green">e = NBAω · sin(ωt)</div>
+        <div class="step-title"><span class="step-num">3</span>Defining Peak EMF (Vm)</div>
+        <p>The term <span class="hl-gold">NBAω</span> is a constant — the maximum possible EMF:</p>
+        <div class="formula">Vm = N · B · A · ω</div>
+        <p>So the final equation becomes:</p>
+        <div class="formula cyan" style="font-size:1.4rem; font-weight:bold; text-align:center;">e(t) = Vm · sin(ωt)</div>
+        <div class="step-title"><span class="step-num">4</span>Adding Phase Shift</div>
+        <p>If the coil starts at any arbitrary angle φ (phase shift):</p>
+        <div class="formula">e(t) = Vm · sin(ωt + φ)</div>
+        <div class="step-title"><span class="step-num">5</span>Angular Frequency</div>
+        <p>ω relates to frequency f and period T as:</p>
+        <div class="formula">ω = 2πf = 2π/T &nbsp;&nbsp;(rad/s)</div>
+      </div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">📊 Phasor Diagram</div>
+        <div style="display:flex; justify-content:center;"><canvas id="phasorCanvas" width="280" height="280"></canvas></div>
+        <p style="text-align:center; margin-top:12px; font-size:0.8rem; color:var(--muted);">Rotating phasor — the vertical projection = instantaneous EMF</p>
+      </div>
+      <div class="card">
+        <div class="card-title">🔢 Variable Reference Table</div>
+        <table><thead><tr><th>Symbol</th><th>Quantity</th><th>Unit</th></tr></thead>
+        <tbody>
+          <tr><td>e(t)</td><td>Instantaneous EMF</td><td>Volts (V)</td></tr>
+          <tr><td>Vm</td><td>Peak / Maximum EMF</td><td>Volts (V)</td></tr>
+          <tr><td>ω</td><td>Angular frequency</td><td>rad/s</td></tr>
+          <tr><td>t</td><td>Time</td><td>Seconds (s)</td></tr>
+          <tr><td>φ</td><td>Phase angle</td><td>Degrees (°) or rad</td></tr>
+          <tr><td>N</td><td>Number of turns</td><td>Dimensionless</td></tr>
+          <tr><td>B</td><td>Magnetic flux density</td><td>Tesla (T)</td></tr>
+          <tr><td>A</td><td>Coil area</td><td>m²</td></tr>
+          <tr><td>Φ</td><td>Magnetic flux</td><td>Weber (Wb)</td></tr>
+          <tr><td>f</td><td>Frequency</td><td>Hertz (Hz)</td></tr>
+          <tr><td>T</td><td>Period</td><td>Seconds (s)</td></tr>
+        </tbody></table>
+      </div>
+      <div class="card">
+        <div class="card-title">🎯 Key Physical Insights</div>
+        <ul>
+          <li>At <span class="hl-cyan">θ = 0°</span> — coil perpendicular to B → Φ is max → e = 0 (no cutting)</li>
+          <li>At <span class="hl-green">θ = 90°</span> — coil parallel to B → Φ = 0 → e = Vm (max cutting)</li>
+          <li>At <span class="hl-gold">θ = 180°</span> — same as 0° → e = 0 again</li>
+          <li>At <span class="hl-red">θ = 270°</span> — max cutting, opposite direction → e = −Vm</li>
+          <li>This is why AC current <span class="hl-cyan">reverses direction</span> every half cycle</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 3 – WAVE SIMULATOR -->
+<section id="tab-wave" class="section">
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">🎛️ Physical Parameters — Slider OR Type Directly</div>
+      <p style="font-size:0.75rem; color:var(--muted); margin-bottom:16px;">Use the slider <b>or</b> type a number in the box — both work and sync with each other.</p>
+      <div class="ctrl-row"><label>N — Turns</label><input type="range" id="s-N" min="1" max="500" step="1" value="100" oninput="syncFromSlider('N')"><input type="number" class="num-input" id="n-N" min="1" max="500" step="1" value="100" oninput="syncFromNum('N')"><span class="unit-tag">turns</span></div>
+      <div class="ctrl-row"><label>B — Field</label><input type="range" id="s-B" min="0.1" max="5" step="0.1" value="1.0" oninput="syncFromSlider('B')"><input type="number" class="num-input" id="n-B" min="0.1" max="5" step="0.1" value="1.0" oninput="syncFromNum('B')"><span class="unit-tag">T</span></div>
+      <div class="ctrl-row"><label>A — Area</label><input type="range" id="s-A" min="0.01" max="1" step="0.01" value="0.1" oninput="syncFromSlider('A')"><input type="number" class="num-input" id="n-A" min="0.01" max="1" step="0.01" value="0.1" oninput="syncFromNum('A')"><span class="unit-tag">m²</span></div>
+      <div class="ctrl-row"><label>f — Frequency</label><input type="range" id="s-f" min="1" max="100" step="1" value="50" oninput="syncFromSlider('f')"><input type="number" class="num-input" id="n-f" min="1" max="100" step="1" value="50" oninput="syncFromNum('f')"><span class="unit-tag">Hz</span></div>
+      <div class="ctrl-row"><label>φ — Phase</label><input type="range" id="s-phi" min="0" max="360" step="1" value="0" oninput="syncFromSlider('phi')"><input type="number" class="num-input" id="n-phi" min="0" max="360" step="1" value="0" oninput="syncFromNum('phi')"><span class="unit-tag">°</span></div>
+      <div style="height:1px; background:var(--border); margin:18px 0;"></div>
+      <div class="card-title" style="margin-bottom:14px;">📊 Calculated Values</div>
+      <div class="readout-grid">
+        <div class="readout-box"><div class="r-label">ω (rad/s)</div><div class="r-val gold" id="c-omega">314.2</div></div>
+        <div class="readout-box"><div class="r-label">Vm (Peak V)</div><div class="r-val cyan" id="c-vm">3142</div></div>
+        <div class="readout-box"><div class="r-label">Vrms</div><div class="r-val green" id="c-vrms">2221</div></div>
+        <div class="readout-box"><div class="r-label">Vavg</div><div class="r-val red" id="c-vavg">2001</div></div>
+        <div class="readout-box"><div class="r-label">Period T (ms)</div><div class="r-val gold" id="c-T">20.0</div></div>
+        <div class="readout-box"><div class="r-label">Form Factor</div><div class="r-val cyan" id="c-ff">1.111</div></div>
+      </div>
+      <div class="formula" style="margin-top:16px; font-size:0.82rem;">Vm = N × B × A × ω = <span id="c-formula-vm" style="color:#fff">?</span></div>
+    </div>
+    <div>
+      <div class="card">
+        <div class="card-title">📈 Live Sine Wave — e(t) = Vm · sin(ωt + φ)</div>
+        <div class="ctrl-row" style="margin-bottom:10px;">
+          <label>Animation Speed</label>
+          <input type="range" id="simSpeed" min="0.02" max="3" step="0.02" value="0.3" oninput="updateSimSpeed()">
+          <input type="number" class="num-input" id="n-simSpeed" min="0.02" max="3" step="0.02" value="0.3" oninput="updateSimSpeedNum()">
+          <span class="unit-tag">×</span>
+        </div>
+        <canvas id="simCanvas" width="600" height="300" class="full"></canvas>
+        <div style="display:flex; gap:10px; margin-top:12px; flex-wrap:wrap;">
+          <button class="btn" id="simPlayBtn" onclick="toggleSim()">⏸ PAUSE</button>
+          <button class="btn danger" onclick="resetSim()">↺ RESET TO (0,0)</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">🔄 e(t) Instantaneous Value</div>
+        <p style="text-align:center; font-size:0.8rem; color:var(--muted); margin-bottom:10px;">Live value at the glowing dot on the wave</p>
+        <div style="text-align:center;"><span style="font-family:'DM Mono',monospace; font-size:2.6rem; color:var(--accent2); font-weight:500;" id="instant-emf">0.0 V</span></div>
+        <div class="formula green" style="text-align:center; margin-top:14px;">e(t) = <span id="inst-formula">0</span> · sin(ωt + φ) = <span id="inst-val">0</span> V</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 4 – ALL FORMULAS -->
+<section id="tab-formulas" class="section">
+  <div class="three-col">
+    <div class="card">
+      <div class="card-title">⚡ Core EMF Formulas</div>
+      <p class="hl-gold">Instantaneous EMF:</p><div class="formula">e(t) = Vm · sin(ωt + φ)</div>
+      <p class="hl-gold">Peak / Maximum EMF:</p><div class="formula">Vm = N · B · A · ω</div>
+      <p class="hl-gold">Angular Frequency:</p><div class="formula">ω = 2πf = 2π / T</div>
+      <p class="hl-gold">Flux (Faraday Source):</p><div class="formula">Φ = N · B · A · cos(ωt)</div>
+      <p class="hl-gold">Faraday's Law:</p><div class="formula red">e = −dΦ/dt</div>
+    </div>
+    <div class="card">
+      <div class="card-title">📐 RMS, Average & Form Factor</div>
+      <p class="hl-cyan">RMS Voltage (equivalent DC):</p><div class="formula cyan">Vrms = Vm / √2 ≈ 0.707 · Vm</div>
+      <p class="hl-cyan">Average Voltage (half-cycle):</p><div class="formula cyan">Vavg = 2Vm / π ≈ 0.637 · Vm</div>
+      <p class="hl-cyan">Peak Factor (Crest Factor):</p><div class="formula green">Kp = Vm / Vrms = √2 ≈ 1.414</div>
+      <p class="hl-cyan">Form Factor:</p><div class="formula green">Kf = Vrms / Vavg = π/(2√2) ≈ 1.111</div>
+      <p class="hl-cyan">RMS Current:</p><div class="formula cyan">Irms = Im / √2</div>
+    </div>
+    <div class="card">
+      <div class="card-title">💡 Power Formulas</div>
+      <p class="hl-gold">Instantaneous Power:</p><div class="formula">p(t) = v(t) · i(t)</div>
+      <p class="hl-gold">Real (Active) Power:</p><div class="formula">P = Vrms · Irms · cos(θ)  [W]</div>
+      <p class="hl-gold">Reactive Power:</p><div class="formula purple">Q = Vrms · Irms · sin(θ)  [VAR]</div>
+      <p class="hl-gold">Apparent Power:</p><div class="formula red">S = Vrms · Irms  [VA]</div>
+      <p class="hl-gold">Power Factor:</p><div class="formula">PF = cos(θ) = P / S</div>
+      <p class="hl-gold">Energy Consumed:</p><div class="formula">W = P · t  [Joules]</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔌 Impedance (AC Circuits)</div>
+      <p class="hl-cyan">Ohm's Law for AC:</p><div class="formula cyan">V = I · Z</div>
+      <p class="hl-cyan">Total Impedance (RLC):</p><div class="formula">Z = √(R² + (XL − XC)²)</div>
+      <p class="hl-cyan">Inductive Reactance:</p><div class="formula green">XL = ω · L = 2πf · L  [Ω]</div>
+      <p class="hl-cyan">Capacitive Reactance:</p><div class="formula red">XC = 1 / (ω · C) = 1/(2πfC)  [Ω]</div>
+      <p class="hl-cyan">Phase Angle:</p><div class="formula">θ = arctan((XL − XC) / R)</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🎵 Resonance & Bandwidth</div>
+      <p class="hl-gold">Resonant Frequency:</p><div class="formula">f₀ = 1 / (2π√LC)  [Hz]</div>
+      <p class="hl-gold">At Resonance (XL = XC):</p><div class="formula green">Z_min = R,  PF = 1,  P = max</div>
+      <p class="hl-gold">Quality Factor:</p><div class="formula">Q_factor = ω₀L / R = 1/(ω₀CR)</div>
+      <p class="hl-gold">Bandwidth:</p><div class="formula">BW = f₀ / Q_factor  [Hz]</div>
+      <p class="hl-gold">Half-power frequencies:</p><div class="formula purple">f₁, f₂ = f₀ ± BW/2</div>
+    </div>
+    <div class="card">
+      <div class="card-title">🔁 Transformer Formulas</div>
+      <p class="hl-cyan">Turns Ratio:</p><div class="formula cyan">a = N₁ / N₂ = V₁ / V₂</div>
+      <p class="hl-cyan">Voltage Transformation:</p><div class="formula">V₂ = V₁ · (N₂ / N₁)</div>
+      <p class="hl-cyan">Current Transformation:</p><div class="formula red">I₂ = I₁ · (N₁ / N₂)</div>
+      <p class="hl-cyan">Power Conservation (ideal):</p><div class="formula green">V₁ · I₁ = V₂ · I₂</div>
+      <p class="hl-cyan">Efficiency:</p><div class="formula">η = Pout / Pin × 100%</div>
+    </div>
+  </div>
+</section>
+
+<!-- SECTION 5 – AC vs DC -->
+<section id="tab-compare" class="section">
+  <div class="card">
+    <div class="card-title">⚡ AC vs DC — Complete Comparison</div>
+    <table><thead><tr><th>Property</th><th style="color:var(--accent)">AC (Alternating Current)</th><th style="color:var(--amber)">DC (Direct Current)</th></tr></thead>
+    <tbody>
+      <tr><td>Direction</td><td>Reverses periodically</td><td>Flows in one direction only</td></tr>
+      <tr><td>Waveform</td><td>Sinusoidal (sine wave)</td><td>Constant / flat line</td></tr>
+      <tr><td>Frequency</td><td>50 Hz (EU) / 60 Hz (US)</td><td>Zero (no frequency)</td></tr>
+      <tr><td>Voltage Level</td><td>Can be stepped up/down via transformer</td><td>Requires inverter to change level</td></tr>
+      <tr><td>Transmission</td><td>Efficient over long distances (high V, low I)</td><td>Loses energy over long distances</td></tr>
+      <tr><td>Generation</td><td>AC generator (alternator)</td><td>Battery, solar cell, DC generator</td></tr>
+      <tr><td>Equation</td><td>v(t) = Vm · sin(ωt)</td><td>V = constant</td></tr>
+      <tr><td>Vrms Relation</td><td>Vrms = Vm / √2 ≈ 0.707Vm</td><td>Vrms = V (they are equal)</td></tr>
+      <tr><td>Household Use</td><td>Lights, appliances, motors</td><td>Electronics, phones, computers</td></tr>
+      <tr><td>Safety</td><td>More dangerous at same voltage</td><td>Generally safer</td></tr>
+      <tr><td>Storage</td><td>Cannot be directly stored</td><td>Stored in batteries</td></tr>
+      <tr><td>Conversion</td><td>AC → DC via rectifier + capacitor</td><td>DC → AC via inverter</td></tr>
+    </tbody></table>
+  </div>
+  <div class="two-col">
+    <div class="card">
+      <div class="card-title">🏭 Why AC Won the "War of Currents"</div>
+      <p>In the 1880s, <span class="hl-cyan">Nikola Tesla (AC)</span> and <span class="hl-gold">Thomas Edison (DC)</span> competed to establish the dominant electrical standard.</p>
+      <p>AC won because of one critical formula:</p>
+      <div class="formula">P_loss = I² · R</div>
+      <p>By stepping <span class="hl-gold">voltage up</span> with a transformer, current decreases proportionally, dramatically reducing power losses over long transmission lines. DC had no efficient way to do this at the time.</p>
+      <ul>
+        <li>AC can travel <span class="hl-cyan">hundreds of kilometres</span> efficiently</li>
+        <li>DC power stations required a station <span class="hl-red">every mile</span></li>
+        <li>Today, <span class="hl-green">HVDC</span> (High Voltage DC) is used for very long submarine cables</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-title">📊 Comparison Wave Canvas</div>
+      <canvas id="compareCanvas" width="500" height="250" class="full"></canvas>
+      <p style="margin-top:10px; font-size:0.88rem; color:var(--muted); text-align:center;">
+        <span style="color:#2a5fa5;">■</span> AC Sine Wave &nbsp;|&nbsp;
+        <span style="color:#b8860b;">■</span> DC Constant &nbsp;|&nbsp;
+        <span style="color:#1a7a4a;">■</span> AC Vrms Level &nbsp;|&nbsp;
+        <span style="color:#c0392b;">■</span> Rectified AC
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer>AC Generator Physics Simulation · Faraday's Law · Electromagnetic Induction · Created for Engineering Education</footer>
+
+<script>
+// ═══════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════
+function showTab(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+  if (id === 'compare') drawCompare();
+}
+
+// ═══════════════════════════════════
+//  SECTION 1: GENERATOR ANIMATION
+// ═══════════════════════════════════
+const genCanvas = document.getElementById('genCanvas');
+const genCtx = genCanvas.getContext('2d');
+const outCanvas = document.getElementById('outputCanvas');
+const outCtx = outCanvas.getContext('2d');
+
+let genAngle = 0;
+let genRunning = true;
+let genSpeedMult = 0.6;
+let graphSpeedMult = 0.5;
+let genHistory = [];
+
+function updateGenSpeed() {
+  genSpeedMult = parseFloat(document.getElementById('genSpeed').value);
+  document.getElementById('genSpeedVal').textContent = genSpeedMult.toFixed(2) + '×';
+}
+function updateGraphSpeed() {
+  graphSpeedMult = parseFloat(document.getElementById('graphSpeed').value);
+  document.getElementById('graphSpeedVal').textContent = graphSpeedMult.toFixed(2) + '×';
+}
+function toggleGen() {
+  genRunning = !genRunning;
+  document.getElementById('genPlayBtn').textContent = genRunning ? '⏸ PAUSE' : '▶ PLAY';
+}
+function resetGen() { genAngle = 0; genHistory = []; }
+
+// ── Toggle state ──────────────────────────────────────────────
+var F_showMotion  = true;
+var F_showField   = true;
+var F_showCurrent = true;
+function updateGenToggles(){
+  F_showMotion  = document.getElementById('cb-motion').checked;
+  F_showField   = document.getElementById('cb-field').checked;
+  F_showCurrent = document.getElementById('cb-current').checked;
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  FENDT-STYLE AC GENERATOR — faithful port of Walter Fendt's
+//  exact projection math (PHI=235°, THETA=15°, oblique parallel)
+// ═══════════════════════════════════════════════════════════════
+var F_PI  = Math.PI;
+var F_PI2 = 2*Math.PI;
+var F_DEG = Math.PI/180;
+var F_PHI   = 235*F_DEG;
+var F_THETA =  15*F_DEG;
+var F_HC = 6;
+var F_XM1 = 40;
+var F_YM1 = 5,  F_YM2 = 300, F_YM3 = 400;
+var F_ZM1 = 90, F_ZM2 = 110;
+var F_YA1 = 80,  F_YA2 = 200;
+var F_ZA1 = 8,   F_ZA2 = 30;
+var F_XC1 = 0;
+var F_YC1 = 0,   F_YC2 = -40;
+var F_ZC1 = 36;
+var F_YC3 = -80, F_YC4 = -120;
+var F_XV1=120, F_XV2=240;
+var F_YV1=-90, F_YV2=-50;
+var F_ZV1=-120, F_ZV2=50, F_ZV3=-50;
+var F_XR1=60, F_XR2=100;
+var F_XW1=130, F_XW2=140, F_XW3=220, F_XW4=260;
+var F_YW1=0,   F_YW2=-90, F_YW3=-110;
+var F_ZW1=-100, F_ZW2=75;
+var F_U0, F_V0;
+var F_a1,F_a2, F_b1,F_b2,F_b3, F_c1,F_c2,F_c3;
+var F_cosA, F_sinA;
+var F_current = 0;
+var F_direction = 1;
+var F_omega = 1.5;
+var F_aE, F_bE, F_dE;
+
+function F_calcCoeff(){
+  F_a1 = -Math.sin(F_PHI); F_a2 = Math.cos(F_PHI);
+  F_b1 =  Math.sin(F_THETA)*F_a2;
+  F_b2 = -Math.sin(F_THETA)*F_a1;
+  F_b3 = -Math.cos(F_THETA);
+  F_c1 = F_a2*F_b3; F_c2 = -F_a1*F_b3; F_c3 = F_a1*F_b2 - F_a2*F_b1;
+}
+function F_U(x,y){ return F_U0 + F_a1*x + F_a2*y; }
+function F_V(x,y,z){ return F_V0 + F_b1*x + F_b2*y + F_b3*z; }
+var F_uRot, F_vRot;
+function F_rotCoords(x,y,z){
+  var xx = x*F_cosA - z*F_sinA, zz = x*F_sinA + z*F_cosA;
+  F_uRot = F_U0 + F_a1*xx + F_a2*y;
+  F_vRot = F_V0 + F_b1*xx + F_b2*y + F_b3*zz;
+}
+function F_calcEllipse(){
+  var r = F_ZC1 - F_HC;
+  var c = F_a1*r, d = -F_b3*r, m = F_b1/F_a1;
+  var c11=c*c*m*m+d*d, c12=-m*c*c, c22=c*c;
+  var bq=-(c*c*(1+m*m)+d*d), cq=c*c*d*d;
+  var disc=bq*bq-4*cq;
+  F_aE = Math.sqrt((-bq-Math.sqrt(disc))/2);
+  F_bE = c*d/F_aE;
+  F_dE = Math.atan(2*c12/(c22-c11))/2;
+}
+function F_poly(ctx, pts, fill, strokeCol){
+  ctx.beginPath(); ctx.moveTo(pts[0].u, pts[0].v);
+  for(var i=1;i<pts.length;i++) ctx.lineTo(pts[i].u,pts[i].v);
+  ctx.closePath();
+  if(fill){ ctx.fillStyle=fill; ctx.fill(); }
+  ctx.strokeStyle = strokeCol||'#000'; ctx.lineWidth=1; ctx.stroke();
+}
+function F_line(ctx,u1,v1,u2,v2,col,lw){
+  ctx.beginPath(); ctx.strokeStyle=col||'#000'; ctx.lineWidth=lw||1;
+  ctx.moveTo(u1,v1); ctx.lineTo(u2,v2); ctx.stroke();
+}
+function F_arrow(ctx,x1,y1,x2,y2,col,lw){
+  lw=lw||2;
+  var dx=x2-x1, dy=y2-y1, len=Math.sqrt(dx*dx+dy*dy);
+  if(len<2)return;
+  dx/=len; dy/=len;
+  var s=2.5*lw+7.5, h=0.5*lw+3.5;
+  var xSp=x2-0.6*s*dx, ySp=y2-0.6*s*dy;
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=lw;
+  ctx.moveTo(x1,y1); ctx.lineTo(xSp,ySp); ctx.stroke();
+  ctx.beginPath(); ctx.fillStyle=col;
+  ctx.moveTo(xSp,ySp);
+  ctx.lineTo(x2-s*dx-h*dy, y2-s*dy+h*dx);
+  ctx.lineTo(x2,y2);
+  ctx.lineTo(x2-s*dx+h*dy, y2-s*dy-h*dx);
+  ctx.closePath(); ctx.fill();
+}
+function F_ellipticArc(ctx, u,v, a,b, delta, w0, w1){
+  ctx.save(); ctx.translate(u,v); ctx.rotate(-delta); ctx.scale(a,b);
+  ctx.arc(0,0,1,w0,w1,true); ctx.restore();
+}
+function F_circle(ctx,u,v,r,col){
+  ctx.beginPath(); ctx.fillStyle=col; ctx.arc(u,v,r,0,F_PI2); ctx.fill();
+}
+function F_cuboid(x1,x2,y1,y2,z1,z2){
+  return [
+    {u:F_U(x1,y2), v:F_V(x1,y2,z1)},
+    {u:F_U(x1,y1), v:F_V(x1,y1,z1)},
+    {u:F_U(x2,y1), v:F_V(x2,y1,z1)},
+    {u:F_U(x2,y1), v:F_V(x2,y1,z2)},
+    {u:F_U(x2,y2), v:F_V(x2,y2,z2)},
+    {u:F_U(x1,y2), v:F_V(x1,y2,z2)},
+  ];
+}
+function F_cuboidInner(x1,y1,z2){ return {u:F_U(x1,y1), v:F_V(x1,y1,z2)}; }
+function F_cylinder(ctx, y, col){
+  var u=F_U(0,y+F_HC), v=F_V(0,y+F_HC,0);
+  ctx.beginPath(); ctx.fillStyle=col;
+  F_ellipticArc(ctx, u,v, F_aE,F_bE, F_dE, 1.5*F_PI, 0.5*F_PI);
+  var u2=F_U(0,y-F_HC), v2=F_V(0,y-F_HC,0);
+  ctx.lineTo(u2+F_bE*Math.sin(F_dE), v2+F_bE*Math.cos(F_dE));
+  F_ellipticArc(ctx, u2,v2, F_aE,F_bE, F_dE, 0.5*F_PI, 1.5*F_PI);
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); F_ellipticArc(ctx, u2,v2, F_aE,F_bE, F_dE, 0, F_PI2); ctx.stroke();
+}
+function F_ring(ctx, y, col, innerCol){
+  var u0=F_U(0,y+F_HC), v0=F_V(0,y+F_HC,0);
+  ctx.beginPath(); ctx.fillStyle=col;
+  F_ellipticArc(ctx,u0,v0, F_aE,F_bE,F_dE, 1.5*F_PI,0.5*F_PI);
+  var u1=F_U(0,y-F_HC), v1=F_V(0,y-F_HC,0);
+  ctx.lineTo(u1+F_bE*Math.sin(F_dE), v1+F_bE*Math.cos(F_dE));
+  F_ellipticArc(ctx,u1,v1, F_aE,F_bE,F_dE, 0.5*F_PI,1.5*F_PI);
+  ctx.lineTo(u0-F_bE*Math.sin(F_dE), v0-F_bE*Math.cos(F_dE));
+  ctx.moveTo(u1-0.75*F_aE*Math.cos(F_dE), v1+0.75*F_aE*Math.sin(F_dE));
+  F_ellipticArc(ctx,u1,v1, -0.75*F_aE,0.75*F_bE,F_dE, 0,F_PI2);
+  ctx.fill(); ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); ctx.fillStyle=innerCol||'#400000';
+  F_ellipticArc(ctx,u1,v1, 0.75*F_aE,0.75*F_bE,F_dE, 0.5*F_PI,1.5*F_PI);
+  F_ellipticArc(ctx,u0,v0, -0.75*F_aE,0.75*F_bE,F_dE, 1.45*F_PI,0.55*F_PI);
+  ctx.fill(); ctx.stroke();
+  ctx.beginPath(); F_ellipticArc(ctx,u1,v1, F_aE,F_bE,F_dE, 0,F_PI2); ctx.stroke();
+}
+function F_halfArmature(ctx, i, col){
+  var sign=3-2*i, z1=sign*F_ZA1, z2=sign*F_ZA2;
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2;
+  F_rotCoords(0,0,z1); ctx.moveTo(F_uRot,F_vRot);
+  F_rotCoords(0,F_YA1,z1); ctx.lineTo(F_uRot,F_vRot);
+  F_rotCoords(0,F_YA1,z2); ctx.lineTo(F_uRot,F_vRot);
+  F_rotCoords(0,F_YA2,z2); ctx.lineTo(F_uRot,F_vRot);
+  F_rotCoords(0,F_YA2,0);  ctx.lineTo(F_uRot,F_vRot);
+  ctx.stroke();
+  if(F_showCurrent && Math.abs(F_current)>0 && F_omega>0){
+    var dir=(i==1)?F_direction:-F_direction;
+    if(F_cosA<0) dir=-dir;
+    var ax1=0*F_cosA-z2*F_sinA, az1=0*F_sinA+z2*F_cosA;
+    var ay=F_YA1+(F_YA2-F_YA1)*0.25, ay2=F_YA1+(F_YA2-F_YA1)*0.75;
+    var pu1=F_U0+F_a1*ax1+F_a2*ay, pv1=F_V0+F_b1*ax1+F_b2*ay+F_b3*az1;
+    var pu2=F_U0+F_a1*ax1+F_a2*ay2, pv2=F_V0+F_b1*ax1+F_b2*ay2+F_b3*az1;
+    if(dir*(sign)>0) F_arrow(ctx,pu1,pv1,pu2,pv2,col,2);
+    else             F_arrow(ctx,pu2,pv2,pu1,pv1,col,2);
+  }
+}
+function F_movementArrow(ctx, i){
+  if(!F_showMotion || F_omega<=0) return;
+  var dir=(3-2*i)*F_direction;
+  var y=(F_YA1+F_YA2)/2, z=(i==1?F_ZA2:-F_ZA2);
+  var ax1=0*F_cosA-z*F_sinA, az1=0*F_sinA+z*F_cosA;
+  var ax2=(-40*dir)*F_cosA-z*F_sinA, az2=(-40*dir)*F_sinA+z*F_cosA;
+  var u1=F_U0+F_a1*ax1+F_a2*y, v1=F_V0+F_b1*ax1+F_b2*y+F_b3*az1;
+  var u2=F_U0+F_a1*ax2+F_a2*y, v2=F_V0+F_b1*ax2+F_b2*y+F_b3*az2;
+  F_arrow(ctx,u1,v1,u2,v2,'#000',2);
+}
+function F_fieldLines(ctx, i1,i2){
+  if(!F_showField) return;
+  var y0=(F_YA2+F_YA1)/2;
+  ctx.strokeStyle='#0000ff'; ctx.lineWidth=2;
+  for(var i=i1;i<=i2;i++){
+    var y1=y0+i*36;
+    ctx.beginPath();
+    ctx.moveTo(F_U(0,y1), F_V(0,y1,-F_ZM1));
+    ctx.lineTo(F_U(0,y1), F_V(0,y1, F_ZM1));
+    ctx.stroke();
+    [0.25,0.85].forEach(function(q){
+      var u1=F_U(0,y1),v1=F_V(0,y1,F_ZM1);
+      var u2=F_U(0,y1),v2=F_V(0,y1,-F_ZM1);
+      var ux=u1+q*(u2-u1), vx=v1+q*(v2-v1);
+      var dx=u2-u1, dy=v2-v1, len=Math.sqrt(dx*dx+dy*dy)||1;
+      dx/=len; dy/=len;
+      F_arrow(ctx, ux-15*dx,vx-15*dy, ux+5*dx,vx+5*dy, '#0000ff',2);
+    });
+  }
+}
+function F_resistor(ctx){
+  var col=F_current!==0?'#ff0000':'#000000';
+  var uR=F_U(F_XW1,F_YC1), vR=F_V(F_XW1,F_YC1,F_ZW1);
+  F_circle(ctx, uR,vR,3,col);
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.moveTo(F_U(F_XR2,F_YC1),F_V(F_XR2,F_YC1,F_ZW1));
+  ctx.lineTo(uR,vR); ctx.stroke();
+  ctx.beginPath(); ctx.fillStyle='#c080ff';
+  var u0=F_U(F_XR1,F_YC1), v0=F_V(F_XR1,F_YC1,F_ZW1);
+  var u1=F_U(F_XR2,F_YC1), v1=F_V(F_XR2,F_YC1,F_ZW1);
+  var d=100*F_DEG;
+  F_ellipticArc(ctx,u0,v0,10,8,d,0,F_PI);
+  F_ellipticArc(ctx,u1,v1,10,8,d,F_PI,0);
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); F_ellipticArc(ctx,u0,v0,10,8,d,0,F_PI2); ctx.stroke();
+  ctx.fillStyle='#000'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('R', 0.4*u0+0.6*u1, 0.4*v0+0.6*v1+4);
+  var y2=F_YC2;
+  var uL=F_U(0,y2), vL=F_V(0,y2,F_ZW1);
+  F_circle(ctx,uL,vL,3,col);
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.moveTo(uL,vL);
+  ctx.lineTo(F_U(0,F_YC1),F_V(0,F_YC1,F_ZW1));
+  ctx.lineTo(F_U(F_XR1,F_YC1),F_V(F_XR1,F_YC1,F_ZW1));
+  ctx.stroke();
+}
+function F_voltmeter(ctx, rv){
+  var pg=F_cuboid(F_XV1,F_XV2, F_YV1,F_YV2, F_ZV1,F_ZV2);
+  F_poly(ctx,pg,'#0000ff','#000');
+  var inner=F_cuboidInner(F_XV1,F_YV1,F_ZV2);
+  [[1],[3],[5]].forEach(function(p){ F_line(ctx,inner.u,inner.v,pg[p[0]].u,pg[p[0]].v,'#000',1); });
+  var sc=[
+    {u:F_U(F_XV1,F_YV1),v:F_V(F_XV1,F_YV1,F_ZV3)},
+    {u:F_U(F_XV2,F_YV1),v:F_V(F_XV2,F_YV1,F_ZV3)},
+    {u:F_U(F_XV2,F_YV1),v:F_V(F_XV2,F_YV1,F_ZV2)},
+    {u:F_U(F_XV1,F_YV1),v:F_V(F_XV1,F_YV1,F_ZV2)}
+  ];
+  F_poly(ctx,sc,'#ffffff','#000');
+  var x0=(F_XW2+F_XW3)/2, wMax=0.36, w=wMax*rv;
+  var nu1=F_U(x0,F_YW2), nv1=F_V(x0,F_YW2,F_ZW1);
+  var nu2=F_U(x0+125*Math.sin(w),F_YW2), nv2=F_V(x0+125*Math.sin(w),F_YW2,F_ZW1+125*Math.cos(w));
+  ctx.beginPath(); ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  ctx.moveTo(nu1,nv1); ctx.lineTo(nu2,nv2); ctx.stroke();
+  var bot=[pg[1],pg[2],sc[1],sc[0]];
+  F_poly(ctx,bot,'#0000ff','#000');
+  ctx.strokeStyle='#000'; ctx.lineWidth=2;
+  for(var i=-2;i<=2;i++){
+    if(i===0)continue;
+    var wi=i*wMax/2, si=Math.sin(wi), ci=Math.cos(wi);
+    ctx.beginPath();
+    ctx.moveTo(F_U(x0+130*si,F_YW2), F_V(x0+130*si,F_YW2,F_ZW1+130*ci));
+    ctx.lineTo(F_U(x0+140*si,F_YW2), F_V(x0+140*si,F_YW2,F_ZW1+140*ci));
+    ctx.stroke();
+  }
+  ctx.fillStyle='#000'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('0', F_U(x0,F_YW2), F_V(x0,F_YW2,F_ZW1+130));
+  F_circle(ctx,F_U(F_XW2,F_YW2),F_V(F_XW2,F_YW2,F_ZW1),3,'#000');
+  F_circle(ctx,F_U(F_XW3,F_YW2),F_V(F_XW3,F_YW2,F_ZW1),3,'#000');
+  ctx.beginPath(); ctx.strokeStyle='#000'; ctx.lineWidth=3;
+  ctx.moveTo(F_U(x0-7,F_YW2),F_V(x0-7,F_YW2,F_ZW1+23));
+  ctx.lineTo(F_U(x0,F_YW2),F_V(x0,F_YW2,F_ZW1+5));
+  ctx.lineTo(F_U(x0+7,F_YW2),F_V(x0+7,F_YW2,F_ZW1+23));
+  ctx.stroke();
+  ctx.beginPath(); ctx.lineWidth=3;
+  ctx.moveTo(F_U(F_XW2-8,F_YW2),F_V(F_XW2-8,F_YW2,F_ZW1+15));
+  ctx.lineTo(F_U(F_XW2+8,F_YW2),F_V(F_XW2+8,F_YW2,F_ZW1+15));
+  ctx.moveTo(F_U(F_XW3-8,F_YW2),F_V(F_XW3-8,F_YW2,F_ZW1+15));
+  ctx.lineTo(F_U(F_XW3+8,F_YW2),F_V(F_XW3+8,F_YW2,F_ZW1+15));
+  ctx.moveTo(F_U(F_XW3,F_YW2),F_V(F_XW3,F_YW2,F_ZW1+23));
+  ctx.lineTo(F_U(F_XW3,F_YW2),F_V(F_XW3,F_YW2,F_ZW1+7));
+  ctx.stroke();
+}
+function F_wires1(ctx){
+  var col=F_current!==0?'#ff0000':'#000000';
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.moveTo(F_U(0,F_YW1),     F_V(0,F_YW1,F_ZC1+F_HC));
+  ctx.lineTo(F_U(0,F_YW1),     F_V(0,F_YW1,F_ZW2));
+  ctx.lineTo(F_U(F_XW1,F_YW1), F_V(F_XW1,F_YW1,F_ZW2));
+  ctx.lineTo(F_U(F_XW1,F_YW1), F_V(F_XW1,F_YW1,F_ZW1));
+  ctx.lineTo(F_U(F_XW4,F_YW1), F_V(F_XW4,F_YW1,F_ZW1));
+  ctx.lineTo(F_U(F_XW4,F_YW3), F_V(F_XW4,F_YW3,F_ZW1));
+  ctx.stroke();
+  if(F_current!==0){
+    var u1=F_U(0,F_YW1),v1=F_V(0,F_YW1,F_ZW2);
+    var u2=F_U(F_XW1,F_YW1),v2=F_V(F_XW1,F_YW1,F_ZW2);
+    F_arrow(ctx,u1+(F_current>0?0.2:0.8)*(u2-u1),v1+(F_current>0?0.2:0.8)*(v2-v1),
+                u1+0.5*(u2-u1),v1+0.5*(v2-v1),col,2);
+  }
+}
+function F_wires2(ctx){
+  var col=F_current!==0?'#ff0000':'#000000';
+  ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=2;
+  ctx.moveTo(F_U(F_XC1,F_YC2), F_V(F_XC1,F_YC2,-F_ZC1-F_HC));
+  ctx.lineTo(F_U(F_XC1,F_YC2), F_V(F_XC1,F_YC2,F_ZW1));
+  ctx.lineTo(F_U(F_XC1,F_YW3), F_V(F_XC1,F_YW3,F_ZW1));
+  ctx.stroke();
+}
+function F_contact(ctx, x,y,z, col){
+  var pg=F_cuboid(x-F_HC,x+F_HC, y-F_HC,y+F_HC, z-F_HC,z+F_HC);
+  F_poly(ctx,pg,col,'#000');
+  var inner=F_cuboidInner(x-F_HC,y-F_HC,z+F_HC);
+  [[1],[3],[5]].forEach(function(p){ F_line(ctx,inner.u,inner.v,pg[p[0]].u,pg[p[0]].v,'#000',1); });
+}
+function F_crank(ctx, y){
+  F_cylinder(ctx, y, '#ffc800');
+  var r=24, x=-r*F_sinA, z=r*F_cosA;
+  var u0=F_U(x,y-F_HC), v0=F_V(x,y-F_HC,z);
+  ctx.beginPath(); ctx.fillStyle='#ffc800';
+  var a=F_aE/12, b=F_bE/12;
+  F_ellipticArc(ctx,u0,v0,a,b,F_dE,1.5*F_PI,0.5*F_PI);
+  var u1=F_U(x,y-36), v1=F_V(x,y-36,z);
+  ctx.lineTo(u1+b*Math.sin(F_dE),v1+b*Math.cos(F_dE));
+  F_ellipticArc(ctx,u1,v1,a,b,F_dE,0.5*F_PI,1.5*F_PI);
+  ctx.closePath(); ctx.fill(); ctx.strokeStyle='#000'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); F_ellipticArc(ctx,u1,v1,a,b,F_dE,0,F_PI2); ctx.stroke();
+}
+function F_buildMagnetPolygons(){
+  var pS=[
+    {u:F_U(-F_XM1,F_YM3),v:F_V(-F_XM1,F_YM3,0)},
+    {u:F_U(-F_XM1,F_YM3),v:F_V(-F_XM1,F_YM3,-F_ZM2)},
+    {u:F_U(-F_XM1,F_YM1),v:F_V(-F_XM1,F_YM1,-F_ZM2)},
+    {u:F_U( F_XM1,F_YM1),v:F_V( F_XM1,F_YM1,-F_ZM2)},
+    {u:F_U( F_XM1,F_YM1),v:F_V( F_XM1,F_YM1,-F_ZM1)},
+    {u:F_U( F_XM1,F_YM2),v:F_V( F_XM1,F_YM2,-F_ZM1)},
+    {u:F_U( F_XM1,F_YM2),v:F_V( F_XM1,F_YM2,0)},
+    {u:F_U(-F_XM1,F_YM2),v:F_V(-F_XM1,F_YM2,0)}
+  ];
+  var u0=F_U(-F_XM1,F_YM1), v0=F_V(-F_XM1,F_YM1,F_ZM1);
+  var u1=F_U(-F_XM1,F_YM2), v1=F_V(-F_XM1,F_YM2,F_ZM1);
+  var uS=F_U(F_XM1,F_YM2), q=(uS-u0)/(u1-u0);
+  var pN=[
+    {u:F_U(-F_XM1,F_YM3),v:F_V(-F_XM1,F_YM3,0)},
+    {u:F_U(-F_XM1,F_YM2),v:F_V(-F_XM1,F_YM2,0)},
+    {u:F_U( F_XM1,F_YM2),v:F_V( F_XM1,F_YM2,0)},
+    {u:uS, v:v0+q*(v1-v0)},
+    {u:F_U(-F_XM1,F_YM1),v:F_V(-F_XM1,F_YM1,F_ZM1)},
+    {u:F_U( F_XM1,F_YM1),v:F_V( F_XM1,F_YM1,F_ZM1)},
+    {u:F_U( F_XM1,F_YM1),v:F_V( F_XM1,F_YM1,F_ZM2)},
+    {u:F_U( F_XM1,F_YM3),v:F_V( F_XM1,F_YM3,F_ZM2)},
+    {u:F_U(-F_XM1,F_YM3),v:F_V(-F_XM1,F_YM3,F_ZM2)}
+  ];
+  return {S:pS, N:pN};
+}
+function F_drawSouth(ctx, pS){
+  F_poly(ctx,pS,'#00ff00','#000');
+  var u1=F_U(-F_XM1,F_YM2), v1=F_V(-F_XM1,F_YM2,-F_ZM1);
+  F_line(ctx,u1,v1, pS[5].u,pS[5].v,'#000',1);
+  F_line(ctx,u1,v1, pS[7].u,pS[7].v,'#000',1);
+  var u2=F_U(-F_XM1,F_YM1), v2=F_V(-F_XM1,F_YM1,-F_ZM1);
+  F_line(ctx,u2,v2, pS[2].u,pS[2].v,'#000',1);
+  F_line(ctx,u2,v2, pS[4].u,pS[4].v,'#000',1);
+  F_line(ctx,u1,v1, u2,v2,'#000',1);
+}
+function F_drawNorth(ctx, pN){
+  F_poly(ctx,pN,'#ff0000','#000');
+  var u1=F_U(-F_XM1,F_YM2), v1=F_V(-F_XM1,F_YM2,F_ZM1);
+  F_line(ctx,u1,v1, pN[1].u,pN[1].v,'#000',1);
+  F_line(ctx,u1,v1, pN[3].u,pN[3].v,'#000',1);
+  var u2=F_U(-F_XM1,F_YM1), v2=F_V(-F_XM1,F_YM1,F_ZM2);
+  F_line(ctx,u2,v2, pN[4].u,pN[4].v,'#000',1);
+  F_line(ctx,u2,v2, pN[6].u,pN[6].v,'#000',1);
+  F_line(ctx,u2,v2, pN[8].u,pN[8].v,'#000',1);
+}
+function F_leftRing(ctx){
+  var col=F_current!==0?'#ff6060':'#c0c0c0';
+  F_rotCoords(0,F_YC1,F_ZA1);
+  var wx=F_uRot, wy=F_vRot;
+  F_rotCoords(0,F_YC1,0.75*(F_ZC1-F_HC));
+  ctx.beginPath(); ctx.strokeStyle=F_current!==0?'#ff0000':'#000'; ctx.lineWidth=2;
+  ctx.moveTo(wx,wy); ctx.lineTo(F_uRot,F_vRot); ctx.stroke();
+  F_ring(ctx, F_YC1, col, '#400000');
+  F_rotCoords(0,F_YC1,-F_ZA1);
+  ctx.beginPath(); ctx.strokeStyle=F_current!==0?'#ff0000':'#000'; ctx.lineWidth=2;
+  ctx.moveTo(F_uRot,F_vRot);
+  ctx.lineTo(F_U(0,F_YC2), F_V(0,F_YC2,-F_ZA1)); ctx.stroke();
+}
+function F_rightRing(ctx){
+  var col=F_current!==0?'#ff6060':'#c0c0c0';
+  F_rotCoords(0,F_YC2,-F_ZA1);
+  var wx=F_uRot, wy=F_vRot;
+  F_rotCoords(0,F_YC2,0.75*(-F_ZC1+F_HC));
+  ctx.beginPath(); ctx.strokeStyle=F_current!==0?'#ff0000':'#000'; ctx.lineWidth=2;
+  ctx.moveTo(wx,wy); ctx.lineTo(F_uRot,F_vRot); ctx.stroke();
+  F_ring(ctx, F_YC2, col, '#400000');
+}
+
+function drawGenerator(angle){
+  var ctx=genCtx;
+  var W=genCanvas.width, H=genCanvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#f4f0e8'; ctx.fillRect(0,0,W,H);
+
+  F_U0 = Math.round(W * 0.45);
+  F_V0 = Math.round(H * 0.5);
+
+  F_cosA=Math.cos(angle); F_sinA=Math.sin(angle);
+  var emf=Math.sin(angle);
+  F_current=Math.abs(emf)>0.05?(emf>0?F_direction:-F_direction):0;
+  var F_currentDisplay=F_showCurrent?F_current:0;
+  var deg=((angle*180/Math.PI)%360+360)%360;
+  var mag=F_buildMagnetPolygons();
+
+  F_drawSouth(ctx, mag.S);
+
+  var qu=Math.floor(angle/(Math.PI/2))%4;
+  if(qu<0)qu+=4;
+  if(F_direction===-1)qu=(qu%2===0?qu+1:qu-1);
+  if(qu<0)qu+=4; qu=qu%4;
+
+  var armCol=F_currentDisplay!==0?'#ff0000':'#000000';
+  var savedCurrent=F_current;
+  F_current=F_currentDisplay;
+
+  switch(qu){
+    case 0: F_movementArrow(ctx,2); F_halfArmature(ctx,2,armCol); F_fieldLines(ctx,-2,2); F_halfArmature(ctx,1,armCol); F_movementArrow(ctx,1); break;
+    case 1: F_fieldLines(ctx,2,2); F_halfArmature(ctx,2,armCol); F_fieldLines(ctx,0,1); F_movementArrow(ctx,2); F_movementArrow(ctx,1); F_fieldLines(ctx,-2,-1); F_halfArmature(ctx,1,armCol); break;
+    case 2: F_movementArrow(ctx,1); F_halfArmature(ctx,1,armCol); F_fieldLines(ctx,-2,2); F_halfArmature(ctx,2,armCol); F_movementArrow(ctx,2); break;
+    case 3: F_fieldLines(ctx,2,2); F_halfArmature(ctx,1,armCol); F_fieldLines(ctx,0,1); F_movementArrow(ctx,1); F_movementArrow(ctx,2); F_fieldLines(ctx,-2,-1); F_halfArmature(ctx,2,armCol); break;
+  }
+
+  F_drawNorth(ctx, mag.N);
+  F_wires2(ctx);
+
+  var cCol=F_current!==0?'#ff6060':'#c0c0c0';
+  F_contact(ctx, F_XC1, F_YC2, -F_ZC1, cCol);
+  F_leftRing(ctx);
+  F_rightRing(ctx);
+  F_contact(ctx, F_XC1, F_YC1, F_ZC1, cCol);
+  F_resistor(ctx);
+  F_wires1(ctx);
+  F_crank(ctx, F_YC4);
+  F_voltmeter(ctx, F_direction*5*F_omega*F_cosA/Math.PI/2);
+
+  F_current=savedCurrent;
+
+  var emfLabel=F_current>0?'↑ EMF positive':F_current<0?'↓ EMF negative':'◉ EMF ≈ zero';
+  var emfClr=F_current>0?'#1a7a4a':F_current<0?'#c0392b':'#7a7368';
+  ctx.fillStyle='rgba(255,255,255,0.9)'; ctx.strokeStyle=emfClr; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.roundRect(6,H-34,220,26,4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle=emfClr; ctx.font='bold 12px DM Mono,monospace'; ctx.textAlign='left';
+  ctx.fillText(emfLabel, 14, H-16);
+
+  document.getElementById('rd-angle').textContent=deg.toFixed(1)+'°';
+  document.getElementById('rd-flux').textContent=F_cosA.toFixed(2);
+  document.getElementById('rd-emf').textContent=emf.toFixed(2);
+  var rate=Math.abs(emf);
+  document.getElementById('rd-phase').textContent=rate>0.85?'MAX':rate<0.15?'ZERO':'MID';
+}
+
+F_calcCoeff();
+F_calcEllipse();
+
+function drawOutput() {
+  const W=outCanvas.width, H=outCanvas.height;
+  outCtx.clearRect(0,0,W,H);
+  const mx=38, my=14, gh=H-my*2-10, midY=my+gh/2;
+  outCtx.strokeStyle='#c8c2b8'; outCtx.lineWidth=1.5;
+  outCtx.beginPath(); outCtx.moveTo(mx,my); outCtx.lineTo(mx,my+gh); outCtx.moveTo(mx,midY); outCtx.lineTo(W-10,midY); outCtx.stroke();
+  outCtx.fillStyle='#7a7368'; outCtx.font='11px DM Mono, monospace'; outCtx.textAlign='right';
+  outCtx.fillText('+Vm',mx-4,my+10); outCtx.fillText('0',mx-4,midY+4); outCtx.fillText('−Vm',mx-4,my+gh); outCtx.fillText('t →',W-4,midY-5);
+  if(genHistory.length>1){
+    const maxLen=W-mx-12, step=maxLen/Math.min(genHistory.length,500);
+    const startIdx=Math.max(0,genHistory.length-500), slice=genHistory.slice(startIdx);
+    for(let i=1;i<slice.length;i++){
+      const x1=mx+(i-1)*step, x2=mx+i*step;
+      const y1=midY-slice[i-1]*(gh/2), y2=midY-slice[i]*(gh/2);
+      outCtx.beginPath();
+      outCtx.strokeStyle=slice[i]>0.02?'#1a7a4a':slice[i]<-0.02?'#c0392b':'#aaa';
+      outCtx.lineWidth=2.5; outCtx.moveTo(x1,y1); outCtx.lineTo(x2,y2); outCtx.stroke();
+    }
+    const last=slice[slice.length-1], dotX=mx+(slice.length-1)*step, dotY=midY-last*(gh/2);
+    outCtx.beginPath(); outCtx.arc(dotX,dotY,6,0,Math.PI*2); outCtx.fillStyle='#b8860b'; outCtx.fill();
+  }
+}
+
+let genAnimLast=null;
+function animateGen(ts){
+  if(genAnimLast===null) genAnimLast=ts;
+  const dt=Math.min((ts-genAnimLast)/1000,0.05); genAnimLast=ts;
+  if(genRunning){
+    genAngle+=genSpeedMult*1.8*dt;
+    F_omega=genSpeedMult*1.8;
+    genHistory.push(Math.sin(genAngle));
+    if(genHistory.length>600) genHistory.shift();
+  }
+  drawGenerator(genAngle); drawOutput();
+  requestAnimationFrame(animateGen);
+}
+requestAnimationFrame(animateGen);
+
+// ═══════════════════════════════════
+//  SECTION 2: PHASOR DIAGRAM
+// ═══════════════════════════════════
+const phasorCanvas=document.getElementById('phasorCanvas');
+const pCtx=phasorCanvas.getContext('2d');
+let phasorAngle=0;
+function drawPhasor(){
+  const W=phasorCanvas.width, H=phasorCanvas.height, cx=W/2, cy=H/2, R=100;
+  pCtx.clearRect(0,0,W,H);
+  pCtx.strokeStyle='#c8c2b8'; pCtx.lineWidth=1.5; pCtx.beginPath(); pCtx.arc(cx,cy,R,0,Math.PI*2); pCtx.stroke();
+  pCtx.strokeStyle='#ddd8d0'; pCtx.lineWidth=1; pCtx.beginPath(); pCtx.moveTo(cx-R-15,cy); pCtx.lineTo(cx+R+15,cy); pCtx.moveTo(cx,cy-R-15); pCtx.lineTo(cx,cy+R+15); pCtx.stroke();
+  pCtx.fillStyle='#7a7368'; pCtx.font='12px DM Mono, monospace'; pCtx.textAlign='center';
+  pCtx.fillText('Re',cx+R+18,cy+4); pCtx.fillText('Im',cx,cy-R-18);
+  const px=cx+R*Math.cos(phasorAngle), py=cy-R*Math.sin(phasorAngle);
+  pCtx.setLineDash([4,4]); pCtx.strokeStyle='rgba(184,134,11,0.4)'; pCtx.lineWidth=1.5;
+  pCtx.beginPath(); pCtx.moveTo(px,py); pCtx.lineTo(px,cy); pCtx.moveTo(px,py); pCtx.lineTo(cx,py); pCtx.stroke(); pCtx.setLineDash([]);
+  pCtx.strokeStyle='#c0392b'; pCtx.lineWidth=3; pCtx.beginPath(); pCtx.moveTo(cx,cy); pCtx.lineTo(px,py); pCtx.stroke();
+  const aN=Math.atan2(cy-py,px-cx);
+  pCtx.fillStyle='#c0392b'; pCtx.beginPath(); pCtx.moveTo(px,py); pCtx.lineTo(px-12*Math.cos(aN-0.35),py+12*Math.sin(aN-0.35)); pCtx.lineTo(px-12*Math.cos(aN+0.35),py+12*Math.sin(aN+0.35)); pCtx.closePath(); pCtx.fill();
+  pCtx.beginPath(); pCtx.arc(px,py,5,0,Math.PI*2); pCtx.fillStyle='#c0392b'; pCtx.fill();
+  pCtx.beginPath(); pCtx.arc(cx,py,5,0,Math.PI*2); pCtx.fillStyle='#1a7a4a'; pCtx.fill();
+  phasorAngle+=0.022; requestAnimationFrame(drawPhasor);
+}
+drawPhasor();
+
+// ═══════════════════════════════════
+//  SECTION 3: WAVE SIMULATOR
+// ═══════════════════════════════════
+const simCanvas=document.getElementById('simCanvas');
+const simCtx=simCanvas.getContext('2d');
+let simTime=0, simRunning=true, simSpeedMult=0.3, simParams={};
+const simFields={N:{min:1,max:500,step:1,dec:0},B:{min:0.1,max:5,step:0.1,dec:1},A:{min:0.01,max:1,step:0.01,dec:2},f:{min:1,max:100,step:1,dec:0},phi:{min:0,max:360,step:1,dec:0}};
+function syncFromSlider(id){const v=parseFloat(document.getElementById('s-'+id).value);document.getElementById('n-'+id).value=v;updateSim();}
+function syncFromNum(id){let v=parseFloat(document.getElementById('n-'+id).value);const f=simFields[id];v=Math.max(f.min,Math.min(f.max,isNaN(v)?f.min:v));document.getElementById('s-'+id).value=v;updateSim();}
+function updateSimSpeed(){simSpeedMult=parseFloat(document.getElementById('simSpeed').value);document.getElementById('n-simSpeed').value=simSpeedMult.toFixed(2);}
+function updateSimSpeedNum(){let v=parseFloat(document.getElementById('n-simSpeed').value);v=Math.max(0.02,Math.min(3,isNaN(v)?0.3:v));document.getElementById('simSpeed').value=v;simSpeedMult=v;}
+function updateSim(){
+  const N=parseFloat(document.getElementById('s-N').value),B=parseFloat(document.getElementById('s-B').value),A=parseFloat(document.getElementById('s-A').value),f=parseFloat(document.getElementById('s-f').value),phi=parseFloat(document.getElementById('s-phi').value)*Math.PI/180;
+  const omega=2*Math.PI*f,Vm=N*B*A*omega,Vrms=Vm/Math.sqrt(2),Vavg=2*Vm/Math.PI,T=1/f,ff=Vrms/Vavg;
+  document.getElementById('c-omega').textContent=omega.toFixed(1);document.getElementById('c-vm').textContent=Vm.toFixed(1);document.getElementById('c-vrms').textContent=Vrms.toFixed(1);document.getElementById('c-vavg').textContent=Vavg.toFixed(1);document.getElementById('c-T').textContent=(T*1000).toFixed(1);document.getElementById('c-ff').textContent=ff.toFixed(3);
+  document.getElementById('c-formula-vm').textContent=`${N}×${B.toFixed(1)}×${A.toFixed(2)}×${omega.toFixed(1)} = ${Vm.toFixed(1)} V`;
+  document.getElementById('inst-formula').textContent=Vm.toFixed(1);
+  simParams={N,B,A,f,phi,omega,Vm,Vrms};
+}
+function drawSim(){
+  const W=simCanvas.width,H=simCanvas.height;simCtx.clearRect(0,0,W,H);
+  const{omega,Vm,Vrms,phi,f}=simParams;if(!Vm)return;
+  simCtx.strokeStyle='rgba(180,170,155,0.4)';simCtx.lineWidth=1;
+  for(let x=0;x<W;x+=40){simCtx.beginPath();simCtx.moveTo(x,0);simCtx.lineTo(x,H);simCtx.stroke();}
+  for(let y=0;y<H;y+=40){simCtx.beginPath();simCtx.moveTo(0,y);simCtx.lineTo(W,y);simCtx.stroke();}
+  const midY=H/2,amplitude=Math.min(Vm,H*0.42),norm=amplitude/Math.max(Vm,1);
+  simCtx.strokeStyle='#c8c2b8';simCtx.lineWidth=1.5;simCtx.beginPath();simCtx.moveTo(0,midY);simCtx.lineTo(W,midY);simCtx.moveTo(44,0);simCtx.lineTo(44,H);simCtx.stroke();
+  simCtx.strokeStyle='rgba(26,122,74,0.4)';simCtx.lineWidth=1;simCtx.setLineDash([6,4]);
+  const vrmsY=midY-Vrms*norm,vrmsY2=midY+Vrms*norm;
+  simCtx.beginPath();simCtx.moveTo(44,vrmsY);simCtx.lineTo(W,vrmsY);simCtx.moveTo(44,vrmsY2);simCtx.lineTo(W,vrmsY2);simCtx.stroke();simCtx.setLineDash([]);
+  simCtx.fillStyle='#1a7a4a';simCtx.font='11px DM Mono, monospace';simCtx.textAlign='right';simCtx.fillText('Vrms',42,vrmsY+4);simCtx.fillText('-Vrms',42,vrmsY2+4);
+  const pixPerSecond=80;
+  simCtx.beginPath();simCtx.strokeStyle='#2a5fa5';simCtx.lineWidth=3;
+  for(let x=44;x<W;x++){const t_at_x=simTime-(W-x)/pixPerSecond,v=Vm*Math.sin(omega*t_at_x+phi),y=midY-v*norm;if(x===44)simCtx.moveTo(x,y);else simCtx.lineTo(x,y);}
+  simCtx.stroke();
+  const instV=Vm*Math.sin(omega*simTime+phi),dotY=midY-instV*norm;
+  simCtx.beginPath();simCtx.arc(W-10,dotY,7,0,Math.PI*2);simCtx.fillStyle='#b8860b';simCtx.fill();
+  simCtx.fillStyle='#7a7368';simCtx.font='11px DM Mono, monospace';simCtx.textAlign='right';
+  simCtx.fillText('+'+Vm.toFixed(0)+'V',42,midY-amplitude+14);simCtx.fillText('-'+Vm.toFixed(0)+'V',42,midY+amplitude+4);simCtx.fillText('t →',W-4,midY-7);
+  const pixPeriod=pixPerSecond/f;
+  simCtx.strokeStyle='rgba(184,134,11,0.25)';simCtx.lineWidth=1;simCtx.setLineDash([3,3]);
+  for(let x=W-10;x>44;x-=pixPeriod){simCtx.beginPath();simCtx.moveTo(x,midY-amplitude-4);simCtx.lineTo(x,midY+amplitude+4);simCtx.stroke();}
+  simCtx.setLineDash([]);
+  if(pixPeriod>30){simCtx.fillStyle='rgba(184,134,11,0.6)';simCtx.font='10px DM Mono, monospace';simCtx.textAlign='center';simCtx.fillText('T',W-10-pixPeriod/2,midY+amplitude+16);}
+  document.getElementById('instant-emf').textContent=instV.toFixed(2)+' V';
+  document.getElementById('inst-val').textContent=instV.toFixed(2);
+}
+let simLast=null;
+function animateSim(ts){
+  if(!simRunning){requestAnimationFrame(animateSim);return;}
+  if(simLast===null)simLast=ts;
+  const dt=Math.min((ts-simLast)/1000,0.05);simLast=ts;
+  simTime+=simSpeedMult*dt;if(simTime>10000)simTime=0;
+  drawSim();requestAnimationFrame(animateSim);
+}
+function toggleSim(){simRunning=!simRunning;document.getElementById('simPlayBtn').textContent=simRunning?'⏸ PAUSE':'▶ PLAY';if(simRunning)simLast=null;}
+function resetSim(){simTime=0;simLast=null;}
+updateSim();requestAnimationFrame(animateSim);
+
+// ═══════════════════════════════════
+//  SECTION 5: COMPARE CANVAS
+// ═══════════════════════════════════
+function drawCompare(){
+  const C=document.getElementById('compareCanvas'),ctx=C.getContext('2d'),W=C.width,H=C.height;
+  ctx.clearRect(0,0,W,H);const midY=H/2,amp=H*0.38,pts=W-60;
+  ctx.strokeStyle='rgba(180,170,155,0.4)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=40){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=0;y<H;y+=30){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.strokeStyle='#c8c2b8';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(30,midY);ctx.lineTo(W-10,midY);ctx.stroke();
+  ctx.strokeStyle='#b8860b';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(30,midY-amp*0.707);ctx.lineTo(W-10,midY-amp*0.707);ctx.stroke();
+  ctx.fillStyle='#b8860b';ctx.font='12px DM Mono, monospace';ctx.textAlign='right';ctx.fillText('DC',28,midY-amp*0.707+4);
+  ctx.strokeStyle='#1a7a4a';ctx.lineWidth=1.5;ctx.setLineDash([5,4]);ctx.beginPath();ctx.moveTo(30,midY-amp*0.707);ctx.lineTo(W-10,midY-amp*0.707);ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle='#c0392b';ctx.lineWidth=2;ctx.beginPath();
+  for(let i=0;i<=pts;i++){const x=30+i,angle=(i/pts)*Math.PI*4,y=midY-amp*Math.abs(Math.sin(angle));if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+  ctx.strokeStyle='#2a5fa5';ctx.lineWidth=3;ctx.beginPath();
+  for(let i=0;i<=pts;i++){const x=30+i,angle=(i/pts)*Math.PI*4,y=midY-amp*Math.sin(angle);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+  ctx.stroke();
+}
+</script>
+</body>
+</html>
